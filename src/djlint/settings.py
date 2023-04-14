@@ -182,9 +182,10 @@ def build_custom_blocks(custom_blocks: Union[str, None]) -> Optional[str]:
     """Build regex string for custom template blocks."""
     if custom_blocks:
         # need to also do "end<tag>"
-        open_tags = [x.strip() for x in custom_blocks.split(",")]
-        close_tags = ["end" + x.strip() for x in custom_blocks.split(",")]
-        return "|" + "|".join(list(set(open_tags + close_tags)))
+        names = tuple(seg.strip() for seg in custom_blocks.split(","))
+        open_tags = tuple(x.strip() for x in names)
+        close_tags = tuple("end" + x.strip() for x in names)
+        return "|" + "|".join(set(open_tags + close_tags))
     return None
 
 
@@ -316,16 +317,18 @@ class Config:
             + load_custom_rules(self.project_root)
         )
 
+        _ignores = tuple(seg.strip() for seg in self.ignore.split(","))
+        _includes = tuple(seg.strip() for seg in self.include.split(","))
         self.linter_rules = list(
             filter(
-                lambda x: x["rule"]["name"] not in self.ignore.split(",")
+                lambda x: x["rule"]["name"] not in _ignores
                 and not any(
                     x["rule"]["name"].startswith(code) for code in self.profile_code
                 )
                 and self.profile not in x["rule"].get("exclude", [])
                 and (
                     x["rule"].get("default", True)
-                    or x["rule"]["name"] in self.include.split(",")
+                    or x["rule"]["name"] in _includes
                 ),
                 rule_set,
             )
